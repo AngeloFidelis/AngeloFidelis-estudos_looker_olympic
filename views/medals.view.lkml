@@ -85,4 +85,21 @@ view: medals {
     filters: [medal_usa_yesno: "Yes"]
     drill_fields: [athlete_name,country,medal_type,discipline]
   }
+
+  measure: total_medals {
+    type: number
+    sql: COUNT(${medal_type}) ;;
+    drill_fields: [show_details*]
+  }
+
+  measure: count_country_frequency {
+    type: number
+    sql: COUNT(${country}) ;;
+    drill_fields: [medal_type, count]
+  }
+
+  measure: count_winners {
+    type: count_distinct
+    sql: ${id_athlete} ;;
+  }
 }

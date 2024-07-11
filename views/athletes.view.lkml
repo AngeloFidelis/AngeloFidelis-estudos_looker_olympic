@@ -76,12 +76,24 @@ view: athletes {
     type: string
     sql: ${TABLE}.short_name ;;
   }
-  measure: count {
-    type: count
-    drill_fields: [id, name, short_name]
-  }
 
   ######################## edições ##########################
+
+  measure: count {
+    type: count
+    drill_fields: [show_details*]
+  }
+
+  set: show_details {
+    fields: [
+      name,
+      country,
+      medals.medal_type,
+      discipline,
+      athletes.height,
+      athletes.age
+    ]
+  }
 
   dimension: age_tier {
     type: tier
