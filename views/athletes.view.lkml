@@ -80,4 +80,19 @@ view: athletes {
     type: count
     drill_fields: [id, name, short_name]
   }
+
+  ######################## edições ##########################
+
+  dimension: age_tier {
+    type: tier
+    tiers: [18, 25, 35, 45, 55, 65]
+    style: integer
+    sql: ${age} ;;
+  }
+
+  dimension: age_diff {
+    type: number
+    sql: DATE_DIFF(CURRENT_DATE, ${birth_date},YEAR) ;;
+  }
+
 }

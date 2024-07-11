@@ -57,6 +57,7 @@ view: medals {
     type: string
     sql: ${TABLE}.medal_type ;;
   }
+  ######################## edições ##########################
   measure: count {
     type: count
     drill_fields: [show_details*]
@@ -70,5 +71,18 @@ view: medals {
       athletes.height,
       athletes.age
     ]
+  }
+
+  dimension: medal_usa_yesno{
+    type: yesno
+    hidden: yes
+    sql: ${country} = "United States of America" ;;
+  }
+
+  measure: total_usa_medal {
+    type: count
+    label: "United States medals"
+    filters: [medal_usa_yesno: "Yes"]
+    drill_fields: [athlete_name,country,medal_type,discipline]
   }
 }

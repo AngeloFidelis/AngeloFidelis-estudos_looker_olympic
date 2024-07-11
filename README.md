@@ -1,51 +1,91 @@
-<h1><span style="color:#2d7eea">README - Your LookML Project</span></h1>
+# Estudos looker
+Esse projeto conta com dois arquivos de viewer: **athletes** (com informações sobre cada atleta) e **medals** (onde mostra as medalhes que cada atleta ganhou)
 
-<h2><span style="color:#2d7eea">LookML Overview</span></h2>
+Além disso, dentro do arquivo model, há a junção do arquivo **athletes** com o arquivo **medals** através desse código:
+```sql
+explore: athletes {
+  join: medals {
+    type: left_outer
+    sql_on: ${athletes.id} = ${medals.id_athlete} ;;
+    relationship: one_to_many
+  }
+}
+```
+onde:
+- `explore: athletes {}`: é uma definição que cria uma exploração (tipo um ponto de partida) para os usuários analisarem os dados chamada athletes (mesmo nome da view, isso significa que todos os dados presente no arquivo **athletes** irá aparecer no explorer **athletes**)
+- `join: medals {}`: especifica uma junção com outra tabela ou visualização, onde nesse caso, vamos juntar a tabela **athletes** com a tabela **models**
+- `type: left_outer`: especifica o tipo de junção usado, onde nesse caso, todos os registros da tabela athletes serão retornados, junto com os registros correspondentes da tabela medals, se existirem
+- `sql_on: ${athletes.id} = ${medals.id_athlete} ;;`: esta linha define a condição para a junção, onde serão retornados os campo quando o id da tabela **athletes** for igual ao campo **id_athlete** da tabela medals.
+- `relationship: one_to_many`: especifica a natureza da relação entre as duas tabelas, indicando que um registro na tabela athletes pode corresponder a muitos registros na tabela medals.
 
-LookML is a data modeling language for describing dimensions, fields, aggregates and relationships based on SQL.
+<details>
+  <summary>Componentes LookML</summary>
 
-LookML is powerful because it:
+### Mudanças iniciais
+1. Dentro do arquivo **models**, foi criado um componente `set` para realizar um drill_fields dentro da medida count, como no código abaixo:
+    ```sql
+    measure: count {
+        type: count
+        drill_fields: [show_details*]
+    }
+    set: show_details {
+        fields: [
+        athlete_name,
+        country,
+        medal_type,
+        discipline,
+        athletes.height,
+        athletes.age
+        ]
+    }
+    ```
+    a. Isso permite especifica um conjunto de campos para detalhamento. Quando um usuário clicar para detalhar a medida count na interface do Looker, ele verá os campos definidos no conjunto show_details.
 
-- **Is all about reusability**: Most data analysis requires the same work to be done over and over again. You extract
-raw data, prepare it, deliver an analysis... and then are never able touse any of that work again. This is hugely
-inefficient, since the next analysis often involves many of the same steps. With LookML, once you define a
-dimension or a measure, you continue to build on it, rather than having to rewrite it again and again.
-- **Empowers end users**:  The data model that data analysts and developers create in LookML condenses and
-encapsulates the complexity of SQL, it and lets analysts get the knowledge about what their data means out of
-their heads so others can use it. This enables non-technical users to do their jobs &mdash; building dashboards,
-drilling to row-level detail, and accessing complex metrics &mdash; without having to worry about what’s behind the curtain.
-- **Allows for data governance**: By defining business metrics in LookML, you can ensure that Looker is always a
-credible single source of truth.
+2. Dentro do arquivo **models**, foi criando dois componentes: uma dimensão escondida do tipo `yesno` que retorna como verdadeiro (Yes) quandos os países forem igual ao "United States of America"; e uma medida do tipo `count` que conta as medalhas ganhas por atletas dos Estados Unidos aplicando um filtro para considerar apenas registros onde o país é "United States of America". E por fim permite detalhamento para ver mais informações sobre os atletas e suas medalhas.
+    ```sql
+    dimension: medal_usa_yesno{
+        type: yesno
+        hidden: yes
+        sql: ${country} = "United States of America" ;;
+    }
 
-The Looker application uses a model written in LookML to construct SQL queries against a particular database that
-business analysts can [Explore](https://cloud.google.com/looker/docs/r/exploring-data) on. For an overview on the basics of LookML, see [What is LookML?](https://cloud.google.com/looker/docs/r/what-is-lookml)
+    measure: total_usa_medal {
+        type: count
+        label: "United States medals"
+        --sql: ${medal_type} ;; o tipo `count` nao usa `sql`
+        filters: [medal_usa_yesno: "Yes"]
+        drill_fields: [athlete_name,country,medal_type,discipline]
+    }
+    ```
 
-<h2><span style="color:#2d7eea">Learn to Speak Looker</span></h2>
+3. Dentro do arquivo **athletes.view**, foi criado uma dimensão do tipo `tier` que serve para categorizar algo. Nesse caso, foi usado para categorizar as idades de todos os participantes
+    ```sql
+    dimension: age_tier {
+        type: tier
+        tiers: [18, 25, 35, 45, 55, 65] --Define os limites dos intervalos (tiers)
+        style: integer
+        sql: ${age} ;;
+    }
+    ```
 
-A LookML project is a collection of LookML files that describes a set of related [views](https://cloud.google.com/looker/docs/r/terms/view-file), [models](https://cloud.google.com/looker/docs/r/terms/model-file), and [Explores](https://cloud.google.com/looker/docs/r/terms/explore).
-- A [view](https://cloud.google.com/looker/docs/r/terms/view-file) (.view files) contains information about how to access or calculate information from each table (or
-across multiple joined tables). Here you’ll typically define the view, its dimensions and measures, and its field sets.
-- A [model](https://cloud.google.com/looker/docs/r/terms/model-file) (.model file) contains information about which tables to use and how they should be joined together.
-Here you’ll typically define the model, its Explores, and its joins.
-- An [Explore](https://cloud.google.com/looker/docs/r/terms/explore) is the starting point for business users to query data, and it is the end result of the LookML you are
-writing. To see the Explores in this project, select an Explore from the Explore menu.
+3. Dentro do arquivo **athletes.view**, foi criado uma dimensão do tipo number, que retorna a idade dos participantes (no código, é usado a data atual para fazer a diferença de idade, e não a data de quando os jogos foram realizados - 2021). Apesar de já ter uma coluna no banco de dados que mostra a idade dos jogadores, esse componente foi utilizado para praticar o trecho `DATE_DIFF(CURRENT_DATE, ${birth_date}, YEAR)`
+    ```sql
+    dimension: age_diff {
+        type: number
+        sql: DATE_DIFF(CURRENT_DATE, ${birth_date},YEAR) ;;
+    }
+    ```
 
-<h2><span style="color:#2d7eea">Exploring Data</span></h2>
 
-Ad-hoc data discovery is one of Looker’s most powerful and unique features. As you evaluate use cases for your
-trial, consider what business areas you would like to explore. Open the Explore menu in the main navigation to see
-the Explores you are building.
 
-<h2><span style="color:#2d7eea">The Development Workflow</span></h2>
+</details>
 
-To support a multi-developer environment, Looker is integrated with Git for version control. Follow [these directions](https://cloud.google.com/looker/docs/r/develop/git-setup)
-to set up Git for your project. To edit LookML, expand the Develop drop-down and toggle on [Development Mode](https://cloud.google.com/looker/docs/r/terms/dev-mode). In
-Development Mode, changes you make to the LookML model exist only in your account until you commit the
-changes and push them to your production model.
+<details>
+  <summary>Dashboard criado</summary>
 
-<h2><span style="color:#2d7eea">Additional Resources</span></h2>
+</details>
 
-To learn more about LookML and how to develop visit:
-- [Looker User Guide](https://looker.com/guide)
-- [Looker Help Center](https://help.looker.com)
-- [Looker University](https://training.looker.com/)
+<details>
+  <summary>Dúvidas</summary>
+
+</details>
