@@ -14,7 +14,7 @@ explore: athletes {
 onde:
 - `explore: athletes {}`: é uma definição que cria uma exploração (tipo um ponto de partida) para os usuários analisarem os dados chamada athletes (mesmo nome da view, isso significa que todos os dados presente no arquivo **athletes** irá aparecer no explorer **athletes**)
 - `join: medals {}`: especifica uma junção com outra tabela ou visualização, onde nesse caso, vamos juntar a tabela **athletes** com a tabela **models**
-- `type: inner`: especifica o tipo de junção usado, onde nesse caso, é uma junção interna (inner join), que retorna apenas os registros que têm correspondências nas duas tabelas (usar o `inner` ou invés do `left_outer` vai ser útil para evitar problemas futuros)
+- `type: inner`: especifica o tipo de junção usado, onde nesse caso, é uma junção interna (inner join), que retorna apenas os registros que têm correspondências nas duas tabelas
 - `sql_on: ${athletes.id} = ${medals.id_athlete} ;;`: esta linha define a condição para a junção, onde serão retornados os campo quando o id da tabela **athletes** for igual ao campo **id_athlete** da tabela medals.
 - `relationship: one_to_many`: especifica a natureza da relação entre as duas tabelas, indicando que um registro na tabela athletes pode corresponder a muitos registros na tabela medals.
 
@@ -313,6 +313,8 @@ explore: athletes_extends {
 
 
 </details>
+
+---
 
 <details>
   <summary>Dashboard criado</summary>
