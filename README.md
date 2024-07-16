@@ -21,10 +21,10 @@ onde:
 <details>
   <summary>Componentes LookML</summary>
 
-### Mudanças iniciais
+<details>
+  <summary>Mudanças simples</summary>
 
-**medals.view**
-
+### Configuração no arquivo medals.view
 1. Dentro do arquivo **medals.view**, foi criado um componente `set` para realizar um drill_fields dentro da medida count, como no código abaixo:
     ```sql
     measure: count {
@@ -83,7 +83,7 @@ onde:
     }
     ```
 
-**athletes.view**
+### Configuração no arquivo athletes.view
 
 1. Dentro do arquivo **athletes.view**, foi criado um `set` semelhante ao criado no arquivo **medals**, só que nesse caso, irá realizar um drill_fields em todos os atletas, e não somente ao atletas que ganharam uma medalha.
     ```sql
@@ -122,6 +122,118 @@ onde:
     }
     ```
 
+4. Dentro do arquivo **athletes.view**, foi criado uma medida para calcular a media de idade dos atletas
+    ```sql
+    measure: avg_age {
+        type: average
+        sql: ${age} ;;
+        value_format: "##.##"
+    }
+    ```
+
+</details>
+
+<details>
+  <summary>Tabelas derivadas</summary>
+
+As tabelas derivadas permitem criar novas tabelas que não existem fisicamente no banco de dados, mas são tratadas como tabelas normais dentro do Looker. Essas são úteis para realizar cálculos e análises complexas a partir de dados já existentes.
+
+Neste contexto específico, as tabelas derivadas foram utilizadas para realizar os seguintes cálculos estatísticos:
+- **Coeficiente de Correlação:** Calcula a relação linear entre as idades dos jogadores e a quantidade de medalhas conquistadas.
+- **Desvio Padrão:** Mede a dispersão das idades dos jogadores em relação à média.
+- **Covariância:** Avalia a tendência de mudança conjunta entre as idades dos jogadores e a quantidade de medalhas conquistadas.
+
+Esta tabela derivada foi criada no SQL Runner utilizando a seguinte sintaxe SQL:
+```sql
+SELECT
+  athletes.id,
+  athletes.age,
+  COUNT(medals.medal_type) AS medal_count
+FROM `lookerstudylab.olympic_looker_dataset.athletes` AS athletes
+INNER JOIN `lookerstudylab.olympic_looker_dataset.medals` AS medals
+ON athletes.id = medals.id_athlete
+GROUP BY athletes.id, athletes.age ;;
+```
+
+Após a criação inicial, foram feitas modificações no arquivo LookML conforme descrito abaixo:
+- A medida **count** foi removida.
+- A dimensão **id** foi configurada com os parâmetros `hidden: yes`, para não ser exibida no Explorer, e `primary_key: yes`, estabelecendo-a como a chave primária utilizada para junção no modelo.
+- As dimensões **age** e **medal_count** também foram configuradas com `hidden: yes`, para não aparecerem no Explorer.
+- Foram criadas as seguintes medidas: **standard_deviation**, **correlation_age_medal** e **covariance**.
+
+```sql
+view: calculations_age_medals {
+  derived_table: {
+    sql: SELECT
+        athletes.id,
+        athletes.age,
+        COUNT(medals.medal_type) AS medal_count
+      FROM `lookerstudylab.olympic_looker_dataset.athletes` AS athletes
+      INNER JOIN `lookerstudylab.olympic_looker_dataset.medals` AS medals
+      ON athletes.id = medals.id_athlete
+      GROUP BY athletes.id, athletes.age ;;
+  }
+
+  dimension: id {
+    hidden: yes
+    primary_key: yes
+    type: number
+    sql: ${TABLE}.id ;;
+  }
+
+  dimension: age {
+    hidden: yes
+    type: number
+    sql: ${TABLE}.age ;;
+  }
+
+  dimension: medal_count {
+    hidden: yes
+    type: number
+    sql: ${TABLE}.medal_count ;;
+  }
+
+  measure: standard_deviation {
+    type: number
+    sql: STDDEV_SAMP(${age}) ;;
+    value_format: "#.##"
+  }
+
+  measure: correlation_age_medal {
+    type: number
+    sql: CORR(${medal_count}, ${age}) ;;
+    value_format: "#.##"
+  }
+
+  measure: covariance {
+    type: number
+    sql: COVAR_SAMP(${medal_count}, ${age}) ;;
+    value_format: "#.##"
+  }
+}
+
+```
+
+Nesse caso, os valores serão:
+- **Coeficiente de Correlação:** -0.12 (Indica que à medida que a idade dos atletas aumenta, há uma tendência ligeira de que a quantidade de medalhas ganhas diminua. A relação é muito fraca e negativa)
+- **Desvio Padrão:** 5.18 (Suponha que a média das idades dos atletas seja, por exemplo, 25 anos. Com um desvio padrão de 5.18, a maioria das idades dos atletas estará entre 25 - 5.18 (19.82) e 25 + 5.18 (30.18) anos. Isso indica uma variabilidade moderada na idade dos atletas.)
+- **Covariância:** -0.41 (Indica que à medida que a idade dos atletas aumenta, a quantidade de medalhas tende a diminuir. A relação é negativa, mas a magnitude da covariância depende das unidades das variáveis)
+
+### Persistindo os dados
+As tabelas derivadas persistentes - PDTs - são gravadas e armazenadas no banco de dados conectado. As etapas para persistir uma tabela derivada são as mesmas, seja uma tabela derivada de SQL ou uma tabela derivada nativa
+
+Primeiro, para persistir as tabelas, a opção de conexão com o banco de dados para persistir as tabelas derivadas precisa estar habilitada e configurada corretamente
+
+Segundo, vamos utilizar uma dessas opções para persistir a tabela:
+- `datagroup_trigger`: utiliza grupos de dados ou políticas de cache configurado no modelo para persistir os dados de tabelas derivadas
+- `sql_trigger_value`: Uma uma instrução SELECT pré-escrita que retorna um valor, como o calor máximo de uma coluna de ID de usuário.
+- `persist_for`: é usado para definir por quanto tempo a tabela derivada precisa ser armazenada após a execução da consulta antes de ser marcada como expirada
+```
+Nesse caso, usamos o persist_for com o valor de '24 hours'
+```
+
+</details>
+
 </details>
 
 <details>
@@ -159,13 +271,11 @@ O sexto look é do tipo Pizza (pie), e mostra a porcentagem de cada tipo de meda
 
 [OBERSEVAÇÃO]: Eu poderia ter criado esse look como uma tabela dentro do drill_fields do Quarto Look (visualização única), porém foi feito dessa forma para poder testar o gráfico de pizza
 
-</details>
-
-<details>
-  <summary>Dúvidas</summary>
-
-1. É comum usar filtros diretamente no explore (tendo em vista que esses filtros serão aplicados para todos os dash) ou é mais comum criar filtros dentro do próprio dash?
-2. Quando que um filtro direto no explorer seria útil?
-3. É normal que, quando eu clico em um dado para detalhamento (drill_field) apareça como google Maps e Tabela, ou foi por causa de alguma configuração que eu fiz?
+### Setimo Look
+O setimo look foi criado usando duas medidas: o desvio padrão das idades e a média das idades. O intuito dessa tabela é demostrar a variabilidade relativa da idade dos atletas em relação à média. Esse look foi criado da seguinte forma:
+- Primeiro, selecionei a medida **Standard Deviation** na view **Calculations Age Medals**
+- Depois, selecionei a medida **Avg Age** na view **Athletes**
+- Depois, de clicar em Run, selecionei o Look "Single Value"
+- Por fim, cliquei em "Edit -> Comparison -> Show -> Calculate Progress (With Porcentage)"
 
 </details>

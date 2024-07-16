@@ -107,4 +107,9 @@ view: athletes {
     sql: DATE_DIFF(CURRENT_DATE, ${birth_date},YEAR) ;;
   }
 
+  measure: avg_age {
+    type: average
+    sql: ${age} ;;
+    value_format: "##.##"
+  }
 }
