@@ -24,5 +24,13 @@ explore: athletes {
 
 explore: athletes_extends {
   view_name: athletes
+  sql_always_where: ${athletes.age} >= 18 AND ${athletes.age} <= 60 ;;
+  always_filter: {
+    filters: [athletes.gender: "Male"]
+  }
+  conditionally_filter: {
+    filters: [medals.country: "United States of America"]
+    unless: [medals.discipline, medals.medal_type]
+  }
   extends: [athletes]
 }

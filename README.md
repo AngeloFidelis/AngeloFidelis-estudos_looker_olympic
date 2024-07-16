@@ -286,6 +286,32 @@ explore: athletes_extends {
 
 </details>
 
+<details>
+  <summary>Filtros no explore</summary>
+
+Caso eu aplique algum filtro no explore, todos os looks criados nesse explorer configurado dentro do dash serão alterados. Então, será utilizado o novo explorer que foi extendido da explorer base (athletes)
+- `sql_always_where e sql_always_having`: permitem adcionar filtros a um explore que nao podem ser modificados nem visualizados por usuários corporativos
+- `always_filter`: Adciona um filtro ao explorer que pode ser acessado e ter seu valor alterado pelos usuários corporativos, porém os filtros não podem ser removidos
+- `conditionally_filter`: Adciona um filtro ao frontend do explore que é acessível aos usuários corporativos. Nesse caso, os usuários podem remover os filtros se colocarem um filtro que foi especificado dentro do parâmetro `unless` no LookML
+```sql
+explore: athletes_extends {
+  view_name: athletes
+  sql_always_where: ${athletes.age} >= 18 AND ${athletes.age} <= 60 ;;
+  always_filter: {
+    filters: [athletes.gender: "Male"]
+  }
+  conditionally_filter: {
+    filters: [medals.country: "United States of America"]
+    unless: [medals.discipline, medals.medal_type]
+  }
+  extends: [athletes]
+}
+```
+
+
+</details>
+
+
 </details>
 
 <details>
