@@ -1,4 +1,6 @@
+include: details_olympic.view
 view: athletes {
+  extends: [details_olympic]
   sql_table_name: `olympic_looker_dataset.athletes` ;;
   drill_fields: [id]
 
@@ -31,20 +33,9 @@ view: athletes {
     sql: ${TABLE}.birth_place ;;
   }
 
-  dimension: country {
-    type: string
-    map_layer_name: countries
-    sql: ${TABLE}.country ;;
-  }
-
   dimension: country_code {
     type: string
     sql: ${TABLE}.country_code ;;
-  }
-
-  dimension: discipline {
-    type: string
-    sql: ${TABLE}.discipline ;;
   }
 
   dimension: discipline_code {

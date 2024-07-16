@@ -21,3 +21,8 @@ explore: athletes {
     relationship: one_to_many
   }
 }
+
+explore: athletes_extends {
+  view_name: athletes
+  extends: [athletes]
+}

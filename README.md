@@ -234,6 +234,58 @@ Nesse caso, usamos o persist_for com o valor de '24 hours'
 
 </details>
 
+<details>
+  <summary>Extends</summary>
+
+Os Extends permitem modularizar (dividir em partes pequenas chamadas de módulos, cada qual com uma função específica) o código criando cópias de objetos LookML que podem ser integrados a outros objetos LookML e modificados independentemente do objeto LookML original
+
+### Extends na view
+- Primeiro, vamos criar um arquivo view chamado **details_olympic.view**
+- Dentro desse arquivo view, valor colocar o parâmetro `extension: required`, que significa que esta visualização não pode ser unida a outras visualizações e, portanto, não estará visível para os usuários.
+- Vamos copiar as dimensões **country** e **discipline** para esse arquivo
+```sql
+view: details_olympic {
+  extension: required
+
+  dimension: country {
+    type: string
+    map_layer_name: countries
+    sql: ${TABLE}.country ;;
+  }
+
+  dimension: discipline {
+    type: string
+    sql: ${TABLE}.discipline ;;
+  }
+}
+```
+Agora, para usarmos o extends, vamos aplicar a seguinte configuração nos arquivos **medals.view** e **athletes.view**
+- Primeiro, vamos adcionar o parâmetro `include: details_olympic.view` no início do código
+- Depois, vamos extender a view do arquivo **details_olympic.view** com o parâmetro `include: details_olympic.view`.
+- Por fim, vamos deletar as dimensões **country** e **discipline** dos arquivos **medals.view** e **athletes.view**
+- O código vai ficar mais ou menos assim:
+```sql
+include: details_olympic.view
+view: medals {
+  extends: [details_olympic]
+  sql_table_name: `olympic_looker_dataset.medals` ;;
+  ...
+}
+```
+
+### Extends com Explorer
+Para evitar reescrever as mesmas junções repetidamente, você pode fazer um Explore “base” que já os une e então estendê-lo para criar Explores adicionais que precisam juntar-se em mais visualizações.
+
+Criei um outro explore com um nome qualquer, onde a view_name será a view **Athletes.view** e extendi as **joins** do explorer **athletes**. Nesse caso, o Explorer **athletes_extends** será igual ao Explorer **Athletes**
+```sql
+explore: athletes_extends {
+  view_name: athletes
+  extends: [athletes]
+}
+```
+
+</details>
+
 </details>
 
 <details>
