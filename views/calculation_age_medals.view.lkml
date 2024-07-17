@@ -11,6 +11,23 @@ view: calculations_age_medals {
       GROUP BY athletes.id, athletes.age ;;
   }
 
+  parameter: select_operation {
+    type: unquoted
+    default_value: "ce"
+    allowed_value: {
+      label: "Standard Deviation"
+      value: "sd"
+    }
+    allowed_value: {
+      label: "Correlation"
+      value: "cn"
+    }
+    allowed_value: {
+      label: "Covariance"
+      value: "ce"
+    }
+  }
+
   dimension: id {
     hidden: yes
     primary_key: yes
@@ -28,6 +45,20 @@ view: calculations_age_medals {
     hidden: yes
     type: number
     sql: ${TABLE}.medal_count ;;
+  }
+
+  measure: calculation {
+    label_from_parameter: select_operation
+    type: number
+    sql:
+      {% if select_operation._parameter_value == 'sd' %}
+        STDDEV_SAMP(${age})
+      {% elsif select_operation._parameter_value == 'cn' %}
+        CORR(${medal_count}, ${age})
+      {% else %}
+        COVAR_SAMP(${medal_count}, ${age})
+      {% endif %}
+    ;;
   }
 
   measure: standard_deviation {

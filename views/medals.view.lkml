@@ -12,9 +12,15 @@ view: medals {
   dimension: athlete_name {
     type: string
     sql: ${TABLE}.athlete_name ;;
+    link: {
+      label: "Google"
+      url: "https://www.google.com/search?q={{ value }}"
+      icon_url: "https://fontawesome.com/icons/google?f=brands&s=solid"
+    }
   }
 
   dimension: athlete_short_name {
+    description: "modelo -> {{_model._name}}"
     type: string
     sql: ${TABLE}.athlete_short_name ;;
   }
@@ -70,6 +76,20 @@ view: medals {
     sql: ${country} = "United States of America" ;;
   }
 
+  dimension: data_athletes {
+    type: string
+    sql: ${athlete_name} ;;
+    html:
+      <ul>
+        <li>Nome: {{ value }}</li>
+        <li>Model: {{ _model._name }}</li>
+        <li>Link: {{ link }}</li>
+        <li>Rendered Value: {{ rendered_value }}</li>
+        <li>Age: {{ athletes.age._value }}</li>
+      </ul>
+      ;;
+  }
+
   measure: total_usa_medal {
     type: count
     label: "United States medals"
@@ -93,4 +113,6 @@ view: medals {
     type: count_distinct
     sql: ${id_athlete} ;;
   }
+  #####################parameter dimension########################
+
 }

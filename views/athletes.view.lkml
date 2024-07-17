@@ -13,6 +13,15 @@ view: athletes {
   dimension: age {
     type: number
     sql: ${TABLE}.age ;;
+    html:
+      {% if value < 18 %}
+        <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#CD6155; text-align:center;">{{value}}</p>
+      {% elsif value >=18 and value <60 %}
+        <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#1D8348; text-align:center;">{{value}}</p>
+      {% else %}
+        <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#0C7BDC; text-align:center;">{{value}}</p>
+      {% endif %}
+    ;;
   }
 
   dimension: birth_country {
@@ -56,6 +65,11 @@ view: athletes {
   dimension: name {
     type: string
     sql: ${TABLE}.name ;;
+    link: {
+      label: "Google"
+      url: "https://www.google.com/search?q={{ name }}"
+      icon_url: "https://www.google.com/images/branding/product/ico/googleg_lodp.ico"
+    }
   }
 
   dimension: residence_country {
