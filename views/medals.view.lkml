@@ -3,6 +3,42 @@ view: medals {
   extends: [details_olympic]
   sql_table_name: `olympic_looker_dataset.medals` ;;
 
+  parameter: month_select{
+    type: unquoted
+    allowed_value: {
+      label: "First month (July)"
+      value: "7"
+    }
+    allowed_value: {
+      label: "Last month (August)"
+      value: "8"
+    }
+  }
+
+  dimension: medals_by_month_select {
+    type: string
+    sql:
+      CASE
+        WHEN
+          CAST(SUBSTR(${medal_month},6,2) AS INT) = {% parameter month_select %}
+        THEN medal_type
+      END ;;
+  }
+
+  dimension: title_dynamic_month {
+    sql: ${medals_by_month_select} ;;
+    html:
+      <a href="#drillmenu" target="_self">
+        {% if month_select._parameter_value == '7' %}
+        Month of July
+        {% elsif month_select._parameter_value == '8' %}
+        Month of August
+        {% endif %}
+      </a>
+    ;;
+    drill_fields: [show_details*]
+  }
+
   dimension: id_athlete {
     primary_key: yes
     type: number
@@ -113,6 +149,4 @@ view: medals {
     type: count_distinct
     sql: ${id_athlete} ;;
   }
-  #####################parameter dimension########################
-
 }

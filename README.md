@@ -307,10 +307,125 @@ explore: athletes_extends {
   extends: [athletes]
 }
 ```
+</details>
+
+<details>
+  <summary>Template Liquid</summary>
+
+Existem 3 categorias de código Liquid:
+- **Objetos**: variáveis ou espaços inseridos em tempo de execução reservados essencialmente utilizado para mostrar o conteúdo em uma página.
+  - `{{ value }}`
+- **Tags**: útil para criar a lógica e o fluxo de controle para os modelos. Eles permitem que você faça decisões condicionais, itere sobre listas de dados, inclua outros templates, atribuir variáveis, entre outros
+  - `{% if user.admin %} ... {% endif %}`
+- **Filtros**: manipulam a saída de um objeto
+  - `{{ user.name | capitalize }}` -> Capitaliza o nome do usuário.
+
+1. No arquivo **athletes.view**, foi usado o template liquid em duas situações: a primeira foi para mostrar uma cor de background como vermelho (idade menor que 18), verde (idade entre 18 e 60) e azul (idade maior que 60); a segunda foi para pesquisar na Internet o nome dos atletas. Foi utilizado somente **Objetos e Tags** nesses códigos
+```sql
+dimension: age {
+  type: number
+  sql: ${TABLE}.age ;;
+  html:
+    {% if value < 18 %}
+      <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#CD6155; text-align:center;">{{value}}</p>
+    {% elsif value >=18 and value <60 %}
+      <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#1D8348; text-align:center;">{{value}}</p>
+    {% else %}
+      <p style="font-size:0.8rem; padding: 2px 0 2px 0; color:white; background-color:#0C7BDC; text-align:center;">{{value}}</p>
+    {% endif %}
+  ;;
+}
+
+dimension: name {
+  type: string
+  sql: ${TABLE}.name ;;
+  link: {
+    label: "Google"
+    url: "https://www.google.com/search?q={{ name }}"
+    icon_url: "https://www.google.com/images/branding/product/ico/googleg_lodp.ico"
+  }
+}
+```
+
+2. No arquivo **deteils_olympic.view**, foi utilizado o template Liquid na dimensão "country" para permitir a pesquisa dos nomes dos países na internet. Além disso, foi aplicado a categoria filter do template Liquid para extrair as duas primeiras letras do nome do país e convertê-las para minúsculas. Isso facilita a busca pelo ícone da bandeira correspondente, que é exibido no explore.
+
+```sql
+dimension: country {
+  type: string
+  map_layer_name: countries
+  sql: ${TABLE}.country ;;
+  link: {
+    label: "Google"
+    url: "https://www.google.com/search?q={{ value }}"
+    icon_url: "https://flagcdn.com/w320/{{ value | downcase | slice:0,2 }}.png"
+  }
+}
+```
+
+3. No arquivo **medals.view**, foi utilizado o template Liquid para exibir informações do atleta, incluindo o nome, o modelo utilizado pela dimensão, o link e a idade proveniente de outro arquivo
+```sql
+dimension: data_athletes {
+  type: string
+  sql: ${athlete_name} ;;
+  html:
+    <ul>
+      <li>Nome: {{ value }}</li>
+      <li>Model: {{ _model._name }}</li>
+      <li>Link: {{ link }}</li>
+      <li>Rendered Value: {{ rendered_value }}</li>
+      <li>Age: {{ athletes.age._value }}</li>
+    </ul>
+    ;;
+}
+```
 
 
 </details>
 
+<details>
+  <summary>Parameter liquid</summary>
+
+### Filtrar a quantidade de medalhas por mês
+Só há registro de dois meses de jogos dentro do dataset, e meu objetivo era filtrar os dados com base no valor do Parameter Liquid selecionado. Além disso, criei um card mostrando o mês que foi selecionado
+```sql
+parameter: month_select{
+    type: unquoted
+    allowed_value: {
+      label: "First month (July)"
+      value: "7"
+    }
+    allowed_value: {
+      label: "Last month (August)"
+      value: "8"
+    }
+  }
+
+  dimension: medals_by_month_select {
+    type: string
+    sql:
+      CASE
+        WHEN
+          CAST(SUBSTR(${medal_month},6,2) AS INT) = {% parameter month_select %}
+        THEN medal_type
+      END ;;
+  }
+
+  dimension: title_dynamic_month {
+    sql: ${medals_by_month_select} ;;
+    html:
+      <a href="#drillmenu" target="_self">
+        {% if month_select._parameter_value == '7' %}
+        Month of July
+        {% elsif month_select._parameter_value == '8' %}
+        Month of August
+        {% endif %}
+      </a>
+    ;;
+    drill_fields: [show_details*]
+  }
+```
+
+</details>
 
 </details>
 

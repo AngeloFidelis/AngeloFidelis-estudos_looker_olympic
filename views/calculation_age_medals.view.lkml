@@ -52,12 +52,26 @@ view: calculations_age_medals {
     type: number
     sql:
       {% if select_operation._parameter_value == 'sd' %}
-        STDDEV_SAMP(${age})
+        ${standard_deviation}
       {% elsif select_operation._parameter_value == 'cn' %}
-        CORR(${medal_count}, ${age})
+        ${correlation_age_medal}
       {% else %}
-        COVAR_SAMP(${medal_count}, ${age})
+        ${covariance}
       {% endif %}
+    ;;
+  }
+  measure: title_dynamic_calculation {
+    sql: ${calculation} ;;
+    html:
+      <a>
+        {% if select_operation._parameter_value == 'sd' %}
+          Standard Deviation
+        {% elsif select_operation._parameter_value == 'cn' %}
+          Correlation
+        {% else %}
+          Covariance
+        {% endif %}
+      </a>
     ;;
   }
 

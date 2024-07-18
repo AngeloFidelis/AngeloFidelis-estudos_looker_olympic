@@ -4,6 +4,30 @@ view: athletes {
   sql_table_name: `olympic_looker_dataset.athletes` ;;
   drill_fields: [id]
 
+  parameter: select_by_birth {
+    type: unquoted
+    allowed_value: {
+      label: "Date"
+      value: "d"
+    }
+    allowed_value: {
+      label: "Weekly"
+      value: "w"
+    }
+    allowed_value: {
+      label: "Monthly"
+      value: "m"
+    }
+    allowed_value: {
+      label: "Quarterly"
+      value: "q"
+    }
+    allowed_value: {
+      label: "Yearly"
+      value: "y"
+    }
+  }
+
   dimension: id {
     primary_key: yes
     type: number
@@ -35,6 +59,21 @@ view: athletes {
     convert_tz: no
     datatype: date
     sql: ${TABLE}.birth_date ;;
+  }
+  dimension: dynamic_birth {
+    sql:
+      {% if select_by_birth._parameter_value == "d" %}
+        ${birth_date}
+      {% elsif select_by_birth._parameter_value == "w" %}
+        ${birth_week}
+      {% elsif select_by_birth._parameter_value == "m" %}
+        ${birth_month}
+      {% elsif select_by_birth._parameter_value == "q" %}
+        ${birth_quarter}
+      {% else %}
+        ${birth_year}
+      {% endif %}
+    ;;
   }
 
   dimension: birth_place {
