@@ -3,6 +3,8 @@ view: medals {
   extends: [details_olympic]
   sql_table_name: `olympic_looker_dataset.medals` ;;
 
+  ####################Liquid filter and parameter#######################
+
   parameter: month_select{
     type: unquoted
     allowed_value: {
@@ -39,6 +41,49 @@ view: medals {
     drill_fields: [show_details*]
   }
 
+  filter: select_discipline {
+    label: "Discipline"
+    type: string
+    suggest_explore: athletes
+    suggest_dimension: discipline
+  }
+
+  dimension: athletes_by_discipline {
+    label: "Athletes"
+    type: string
+    sql:
+      CASE
+        WHEN
+          {% condition select_discipline %}
+            ${discipline}
+          {% endcondition %}
+        THEN ${athlete_name}
+      END
+    ;;
+    link: {
+      label: "Google"
+      url: "https://www.google.com/search?q={{ value }}"
+      icon_url: "https://fontawesome.com/icons/google?f=brands&s=solid"
+    }
+    drill_fields: [show_details*]
+  }
+
+  dimension: qtd_medal_by_discipline {
+    type:string
+    sql:
+      CASE
+        WHEN
+          {% condition select_discipline %}
+            ${discipline}
+          {% endcondition %}
+        THEN ${medal_type}
+      END
+    ;;
+    drill_fields: [show_details*]
+  }
+
+  ###############################################################################
+
   dimension: id_athlete {
     primary_key: yes
     type: number
@@ -46,13 +91,9 @@ view: medals {
   }
 
   dimension: athlete_name {
+    hidden: yes
     type: string
     sql: ${TABLE}.athlete_name ;;
-    link: {
-      label: "Google"
-      url: "https://www.google.com/search?q={{ value }}"
-      icon_url: "https://fontawesome.com/icons/google?f=brands&s=solid"
-    }
   }
 
   dimension: athlete_short_name {

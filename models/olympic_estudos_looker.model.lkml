@@ -10,6 +10,7 @@ datagroup: olympic_estudos_looker_default_datagroup {
 persist_with: olympic_estudos_looker_default_datagroup
 
 explore: athletes {
+  sql_always_where: ${medals.athletes_by_discipline} IS NOT NULL ;;
   join: medals {
     type: inner
     sql_on: ${athletes.id} = ${medals.id_athlete} ;;
