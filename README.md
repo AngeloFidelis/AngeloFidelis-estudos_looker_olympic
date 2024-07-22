@@ -384,6 +384,7 @@ dimension: data_athletes {
 
 <details>
   <summary>Parameter liquid</summary>
+Dentro do looker, há um objeto chamado parameter que usam a linguagem liquid para aumentar a interatividade em Explorer, looks e dashboards. O caso de uso para isso é que às vezes você deseja mais flexibilidade para influenciar o SQL gerado.
 
 ### Filtrar a quantidade de medalhas por mês
 Só há registro de dois meses de jogos dentro do dataset, e meu objetivo era filtrar os dados com base no valor do Parameter Liquid selecionado. Além disso, criei um card mostrando o mês que foi selecionado
@@ -424,6 +425,57 @@ parameter: month_select{
     drill_fields: [show_details*]
   }
 ```
+
+</details>
+
+<details>
+  <summary>Filter Liquid</summary>
+
+São valores inseridos pelo usuário que são passados para consultas SQL usando lógica condicional escrita de forma inteligente e permitindo criar dimensões e medidas dinâmicas.
+
+```sql
+filter: select_discipline {
+  label: "Discipline"
+  type: string
+  suggest_explore: athletes
+  suggest_dimension: discipline
+}
+
+dimension: athletes_by_discipline {
+  label: "Athletes"
+  type: string
+  sql:
+    CASE
+      WHEN
+        {% condition select_discipline %}
+          ${discipline}
+        {% endcondition %}
+      THEN ${athlete_name}
+    END
+  ;;
+  link: {
+    label: "Google"
+    url: "https://www.google.com/search?q={{ value }}"
+    icon_url: "https://fontawesome.com/icons/google?f=brands&s=solid"
+  }
+  drill_fields: [show_details*]
+}
+
+dimension: qtd_medal_by_discipline {
+  type:string
+  sql:
+    CASE
+      WHEN
+        {% condition select_discipline %}
+          ${discipline}
+        {% endcondition %}
+      THEN ${medal_type}
+    END
+  ;;
+  drill_fields: [show_details*]
+}
+```
+
 
 </details>
 
