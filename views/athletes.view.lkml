@@ -97,8 +97,8 @@ view: athletes {
   }
 
   dimension: height {
-    type: string
-    sql: ${TABLE}.height ;;
+    type: number
+    sql: CAST(SUBSTRING(${TABLE}.height, 1, 3) as INT64) ;;
   }
 
   dimension: name {
@@ -154,6 +154,11 @@ view: athletes {
   measure: avg_age {
     type: average
     sql: ${age} ;;
+    value_format: "##.##"
+  }
+  measure: avg_height {
+    type: average
+    sql: ${height} ;;
     value_format: "##.##"
   }
 }

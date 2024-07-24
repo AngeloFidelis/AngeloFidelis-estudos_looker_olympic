@@ -131,6 +131,23 @@ onde:
     }
     ```
 
+5. Dentro do arquivo **athletes.view**, a dimensão `height` foi alterada para pegar o valor da altura dos atletas em string e converter para number
+  ```sql
+    dimension: height {
+      type: number
+      sql: CAST(SUBSTRING(${TABLE}.height, 1, 3) as INT64) ;;
+    }
+  ```
+
+6. Dentro do arquivo **athletes.view**, foi criado uma medida para calcular a media da altura dos atletas
+    ```sql
+    measure: avg_height {
+      type: average
+      sql: ${height} ;;
+      value_format: "##.##"
+    }
+    ```
+
 </details>
 
 <details>
@@ -139,9 +156,13 @@ onde:
 As tabelas derivadas permitem criar novas tabelas que não existem fisicamente no banco de dados, mas são tratadas como tabelas normais dentro do Looker. Essas são úteis para realizar cálculos e análises complexas a partir de dados já existentes.
 
 Neste contexto específico, as tabelas derivadas foram utilizadas para realizar os seguintes cálculos estatísticos:
-- **Coeficiente de Correlação:** Calcula a relação linear entre as idades dos jogadores e a quantidade de medalhas conquistadas.
+- **Coeficiente de Correlação:** Calcula a relação linear entre as idades dos jogadores e a quantidade de medalhas conquistadas. O coeficiente de correlação mede tanto a direção quanto a força do relacionamento linear entre duas variáveis. Ele é uma versão padronizada da covariância.
 - **Desvio Padrão:** Mede a dispersão das idades dos jogadores em relação à média.
-- **Covariância:** Avalia a tendência de mudança conjunta entre as idades dos jogadores e a quantidade de medalhas conquistadas.
+- **Covariância:** Avalia a tendência de mudança conjunta entre as idades dos jogadores e a quantidade de medalhas conquistadas. Covariância mede a direção do relacionamento linear entre duas variáveis. Em termos simples, ela indica se as variáveis tendem a aumentar ou diminuir juntas.
+
+```
+A covariância indica apenas a direção da relação, enquanto o coeficiente de correlação indica a força e a direção.
+```
 
 Esta tabela derivada foi criada no SQL Runner utilizando a seguinte sintaxe SQL:
 ```sql
@@ -164,14 +185,33 @@ Após a criação inicial, foram feitas modificações no arquivo LookML conform
 ```sql
 view: calculations_age_medals {
   derived_table: {
+    persist_for: "24 hours"
     sql: SELECT
-        athletes.id,
-        athletes.age,
-        COUNT(medals.medal_type) AS medal_count
+      athletes.id,
+      athletes.age,
+      COUNT(medals.medal_type) AS medal_count,
+      CAST(SUBSTRING(height, 1, 3) as INT64) AS height_number
       FROM `lookerstudylab.olympic_looker_dataset.athletes` AS athletes
       INNER JOIN `lookerstudylab.olympic_looker_dataset.medals` AS medals
       ON athletes.id = medals.id_athlete
-      GROUP BY athletes.id, athletes.age ;;
+      GROUP BY athletes.id, athletes.age, athletes.height ; ;;
+  }
+
+  parameter: select_operation {
+    type: unquoted
+    default_value: "ce"
+    allowed_value: {
+      label: "Standard Deviation"
+      value: "sd"
+    }
+    allowed_value: {
+      label: "Correlation"
+      value: "cn"
+    }
+    allowed_value: {
+      label: "Covariance"
+      value: "ce"
+    }
   }
 
   dimension: id {
@@ -193,29 +233,60 @@ view: calculations_age_medals {
     sql: ${TABLE}.medal_count ;;
   }
 
-  measure: standard_deviation {
+  dimension: height_number {
+    hidden: yes
+    type: number
+    sql: ${TABLE}.height_number ;;
+  }
+
+  measure: standard_deviation_age {
+    description: "statistical measure that quantifies the dispersion or variability of a data set relative to its mean"
     type: number
     sql: STDDEV_SAMP(${age}) ;;
     value_format: "#.##"
   }
 
   measure: correlation_age_medal {
+    description: "measures the strength and direction of the linear relationship between two variables"
     type: number
     sql: CORR(${medal_count}, ${age}) ;;
     value_format: "#.##"
   }
 
-  measure: covariance {
+  measure: covariance_age {
+    description: "measures the direction of the linear relationship between two variables, but unlike correlation, it is not standardized. This means that covariance can take on any value and its interpretation depends on the units of the variables involved."
     type: number
     sql: COVAR_SAMP(${medal_count}, ${age}) ;;
     value_format: "#.##"
   }
-}
 
+
+  measure: correlation_age_height {
+    description: "statistical measure that quantifies the dispersion or variability of a data set relative to its mean"
+    type: number
+    sql: CORR(${medal_count}, ${height_number}) ;;
+    value_format: "#.##"
+  }
+
+  measure: standard_deviation_height {
+    description: "statistical measure that quantifies the dispersion or variability of a data set relative to its mean"
+    type: number
+    sql: STDDEV_SAMP(${height_number}) ;;
+    value_format: "#.##"
+  }
+
+  measure: covariance_height {
+    description: "measures the direction of the linear relationship between two variables, but unlike correlation, it is not standardized. This means that covariance can take on any value and its interpretation depends on the units of the variables involved."
+    type: number
+    sql: COVAR_SAMP(${medal_count}, ${height_number}) ;;
+    value_format: "#.##"
+  }
+}
 ```
 
 Nesse caso, os valores serão:
-- **Coeficiente de Correlação:** -0.12 (Indica que à medida que a idade dos atletas aumenta, há uma tendência ligeira de que a quantidade de medalhas ganhas diminua. A relação é muito fraca e negativa)
+- **Coeficiente de Correlação da idade:** -0.12 (Indica que à medida que a idade dos atletas aumenta, há uma tendência ligeira de que a quantidade de medalhas ganhas diminua. A relação é muito fraca e negativa)
+- **Coeficiente de Correlação da altura:** -0.04 (Indica que à medida que a altura dos atletas aumenta, há uma tendência ligeira de que a quantidade de medalhas ganhas diminua. A relação é muito fraca e negativa)
 - **Desvio Padrão:** 5.18 (Suponha que a média das idades dos atletas seja, por exemplo, 25 anos. Com um desvio padrão de 5.18, a maioria das idades dos atletas estará entre 25 - 5.18 (19.82) e 25 + 5.18 (30.18) anos. Isso indica uma variabilidade moderada na idade dos atletas.)
 - **Covariância:** -0.41 (Indica que à medida que a idade dos atletas aumenta, a quantidade de medalhas tende a diminuir. A relação é negativa, mas a magnitude da covariância depende das unidades das variáveis)
 
@@ -386,6 +457,113 @@ dimension: data_athletes {
   <summary>Parameter liquid</summary>
 Dentro do looker, há um objeto chamado parameter que usam a linguagem liquid para aumentar a interatividade em Explorer, looks e dashboards. O caso de uso para isso é que às vezes você deseja mais flexibilidade para influenciar o SQL gerado.
 
+### Filtrar os cálculos estatísticos
+Foram criados 3 medidas estatísticas, e, para visualizar com base na idade ou na altura, foi utilizado o seguinte código dentro do arquivo **calculation_age_medals** (tabela derivada)
+```sql
+parameter: select_operation {
+  type: unquoted
+  default_value: "age"
+  allowed_value: {
+    label: "Select Age"
+    value: "age"
+  }
+  allowed_value: {
+    label: "Select Height"
+    value: "height"
+  }
+}
+
+measure: standard_deviation_calculation {
+  type: number
+  sql:
+    {% if select_operation._parameter_value == 'age' %}
+      ${standard_deviation_age}
+    {% elsif select_operation._parameter_value == 'height' %}
+      ${standard_deviation_height}
+    {% endif %}
+  ;;
+  value_format: "#.##"
+}
+
+measure: correlation_medal_calculation {
+  type: number
+  sql:
+    {% if select_operation._parameter_value == 'age' %}
+      ${correlation_age_medal}
+    {% elsif select_operation._parameter_value == 'height' %}
+      ${correlation_height_medal}
+    {% endif %}
+  ;;
+  value_format: "#.##"
+}
+
+measure: covariance_calculation {
+  type: number
+  sql:
+    {% if select_operation._parameter_value == 'age' %}
+      ${covariance_age}
+    {% elsif select_operation._parameter_value == 'height' %}
+      ${covariance_height}
+    {% endif %}
+  ;;
+  value_format: "#.##"
+}
+
+measure: avg_calculation {
+  type: number
+  sql:
+    {% if select_operation._parameter_value == 'age' %}
+      ${avg_age}
+    {% elsif select_operation._parameter_value == 'height' %}
+      ${avg_height}
+    {% endif %}
+  ;;
+  value_format: "#.##"
+}
+
+dimension: standard_deviation_title {
+  type: string
+  sql: 1 ;;
+  html:
+    <p>
+      {% if select_operation._parameter_value == 'age' %}
+        Standard Deviation Age
+      {% elsif select_operation._parameter_value == 'height' %}
+        Standard Deviation Height
+      {% endif %}
+    </p>
+  ;;
+}
+
+dimension: correlation_medal_title {
+  type: string
+  sql: 1 ;;
+  html:
+    <p>
+      {% if select_operation._parameter_value == 'age' %}
+        Correlation Age Medal
+      {% elsif select_operation._parameter_value == 'height' %}
+        Correlation Height Medal
+      {% endif %}
+    </p>
+  ;;
+}
+
+dimension: covariance_title {
+  type: string
+  sql: 1 ;;
+  html:
+    <p>
+      {% if select_operation._parameter_value == 'age' %}
+        Covariance Age
+      {% elsif select_operation._parameter_value == 'height' %}
+        Covariance Height
+      {% endif %}
+    </p>
+  ;;
+}
+```
+
 ### Filtrar a quantidade de medalhas por mês
 Só há registro de dois meses de jogos dentro do dataset, e meu objetivo era filtrar os dados com base no valor do Parameter Liquid selecionado. Além disso, criei um card mostrando o mês que foi selecionado
 ```sql
@@ -486,43 +664,21 @@ dimension: qtd_medal_by_discipline {
 <details>
   <summary>Dashboard criado</summary>
 
-### Primeiro Look
-O primeiro look criado é um look que mostra a diferença do total de medalhas ganhas entre homens e mulheres com base no tipo da medalha. Esse look foi criado da seguinte forma:
-- Primeiro, selecionei a dimensão **Medal Type** na viwer **Medals**
-- Depois, selecionei a dimensão **Gender** como um _pivot_ na viwer **Athletes**
-- Por fim, selecionei a medida **Count** da viwer **Medals**
+<details>
+  <summary>Primeiro dash</summary>
 
-### Segundo Look
-O segundo look criado é um look que mostra a quantidade de atletas totais que competiram com base no intervalo de idade deles. Foi utilizado um gráfico de área nesse look. Esse look foi criado da seguinte forma
-- Primeiro, selecionei a dimensão **Age tier** na viwer **Athletes**
-- Por fim, selecionei a medida **Count** da viwer **Athletes**
+O primeiro dashboard foi criado com o objetivo de filtrar os cálculos estatísticos com base na idade ou na altura. É possível visualizar o desvio padrão comparado à média, o coeficiente de variação e a covariância da idade ou da altura, conforme o valor selecionado.
+- Primeiro, foi selecionado o parâmetro desejado.
+- Em seguida, foi escolhida uma das dimensões de interesse.
+- Então, foi selecionada a tabela de valor único.
+- O resultado foi salvo no dashboard.
+- Depois, o título foi desmarcado e foi selecionada a dimensão correspondente.
+- A tabela de valor único foi novamente escolhida, e o resultado foi salvo na mesma tabela.
+- Esse processo foi repetido para todas as medidas estatísticas.
 
-### Terceiro Look
-O terceiro look criado é um gráfico que exibe a quantidade de medalhas ganhas por cada atleta. Este gráfico de linha mostra a diferença de idade entre os atletas e os tipos de medalhas que eles ganharam. Esse look foi criado da seguinte forma:
-- Primeiro, selecionei a dimensão **Age** na viwer **Athletes**
-- Depois, selecionei a dimensão **Medal Type** como um _pivot_ na viwer **Medals**
-- Por fim, selecionei a medida **Count** da viwer **Medals**
+[OBS] Caso tente salvar duas tabelas em um dashboard, o parâmetro líquido só funcionará em uma das tabelas. Para contornar esse problema, é necessário deletar o filtro no dashboard e recriá-lo.
 
-### Quarto Look
-O quarto look criado é um gráfico de valor único que mostra a quantidade de medalhas conquistadas na olimpíada. Esse gráfico foi feito para mostrar que, se o tipo de junção no arquivo **model** estivesse como `left_outer`, agora, quando eu clicasse no valor do gráfico para o detalhamento através do `drill_fields`, haveria dados nulos. Porém, com o tipo de junção `inner`, não há dados nulos
+</details>
 
-### Quinto Look
-O quinto look é do tipo google Maps, e mostra a quantidade de medalhas que cada país ganhou, separados pelos tipos de medalha. Esse look foi criado da seguinte forma:
-- Primeiro, selecionei a dimensão **Country** na viwer **Medals**
-- Por fim, selecionei a medida **Count Country Frequency** na viwer **Medals**
-
-### Sexto Look
-O sexto look é do tipo Pizza (pie), e mostra a porcentagem de cada tipo de medalha conquistada.
-- Depois, selecionei a dimensão **Medal Type** na viwer **Medals**
-- Por fim, selecionei a medida **Count** da viwer **Medals**
-
-[OBERSEVAÇÃO]: Eu poderia ter criado esse look como uma tabela dentro do drill_fields do Quarto Look (visualização única), porém foi feito dessa forma para poder testar o gráfico de pizza
-
-### Setimo Look
-O setimo look foi criado usando duas medidas: o desvio padrão das idades e a média das idades. O intuito dessa tabela é demostrar a variabilidade relativa da idade dos atletas em relação à média. Esse look foi criado da seguinte forma:
-- Primeiro, selecionei a medida **Standard Deviation** na view **Calculations Age Medals**
-- Depois, selecionei a medida **Avg Age** na view **Athletes**
-- Depois, de clicar em Run, selecionei o Look "Single Value"
-- Por fim, cliquei em "Edit -> Comparison -> Show -> Calculate Progress (With Porcentage)"
 
 </details>
