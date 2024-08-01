@@ -101,6 +101,11 @@ view: athletes {
     sql: CAST(SUBSTRING(${TABLE}.height, 1, 3) as INT64) ;;
   }
 
+  dimension: discipline {
+    type: string
+    sql: ${TABLE}.discipline ;;
+  }
+
   dimension: name {
     type: string
     sql: ${TABLE}.name ;;

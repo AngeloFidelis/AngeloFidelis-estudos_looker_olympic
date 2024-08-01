@@ -188,9 +188,11 @@ view: calculations_age_medals {
   measure: avg_age {
     type: average
     sql: ${age} ;;
+    value_format: "#.##"
   }
   measure: avg_height {
     type: average
     sql: ${height_number} ;;
+    value_format: "#.##"
   }
 }

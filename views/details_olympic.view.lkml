@@ -11,9 +11,4 @@ view: details_olympic {
       icon_url: "https://flagcdn.com/w320/{{ value | downcase | slice:0,2 }}.png"
     }
   }
-
-  dimension: discipline {
-    type: string
-    sql: ${TABLE}.discipline ;;
-  }
 }
