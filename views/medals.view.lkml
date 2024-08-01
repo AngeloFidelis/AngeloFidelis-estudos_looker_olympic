@@ -68,15 +68,15 @@ view: medals {
     drill_fields: [show_details*]
   }
 
-  # dimension: discipline_title {
-  #   type: string
-  #   sql: ${discipline} ;;
-  #   html:
-  #     <p>
-  #       Discipline: {{discipline._value}}
-  #     </p>
-  #   ;;
-  # }
+  dimension: discipline_title {
+    type: string
+    sql: ${discipline} ;;
+    html:
+      <p>
+        Discipline: {{discipline._value}}
+      </p>
+    ;;
+  }
 
   dimension: qtd_medal_by_discipline {
     type:string
@@ -90,15 +90,6 @@ view: medals {
       END
     ;;
     drill_fields: [show_details*]
-  }
-
-  dimension: disciplines_title {
-    type: string
-    sql: ${discipline} ;;
-  }
-  dimension: test {
-    type: string
-    sql: "Oi" ;;
   }
 
   ###############################################################################
